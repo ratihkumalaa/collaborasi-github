@@ -168,7 +168,7 @@ export class Start extends Phaser.Scene {
             'High Score: ' + skor_tertinggi,
             {
                 fontSize: '30px',
-                color: '#ff732e',
+                color: '#ffffff',
                 align: 'center'
             }
         )
