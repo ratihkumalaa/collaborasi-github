@@ -1,7 +1,6 @@
-var layoutsize = {'w':1024, 'h': 768};
+var layoutsize = {'w':1920, 'h': 1080};
 var X_POSITION;
 var Y_POSITION;
-
 
 export class Play extends Phaser.Scene {
     constructor() {
@@ -15,52 +14,67 @@ export class Play extends Phaser.Scene {
         this.load.image('panel_skor', 'assets/panel_skor.png');
         this.load.spritesheet('player', 'assets/chara.png', { frameWidth: 64, frameHeight: 150 });
 
-       // Sound Effect
         this.load.audio('snd_dead', 'assets/audio/snd_dead.mp3');
         this.load.audio('snd_klik1', 'assets/audio/snd_klik_1.mp3'); 
         this.load.audio('snd_klik2', 'assets/audio/snd_klik_2.mp3'); 
         this.load.audio('snd_klik3', 'assets/audio/snd_klik_3.mp3');  
-    
     }
 
     create() { 
 
-        //Responsif view
+        let width = this.cameras.main.width;
+        let height = this.cameras.main.height;
+
+        // POSITION
         X_POSITION ={
             'LEFT': 0,
-            'CENTER': this.scale.width / 2,
-            'RIGHT': this.scale.width
+            'CENTER': this.cameras.main.centerX,
+            'RIGHT': width
         };
 
         Y_POSITION = {
             'TOP': 0,
-            'CENTER': this.scale.height /2,
-            'BOTTOM': this.scale.height
+            'CENTER': this.cameras.main.centerY,
+            'BOTTOM': height
         };
 
-        // Musik/Sound Effect
-        // Ketika karakter terkena obstacle
+        // BACKGROUND COLOR
+        this.cameras.main.setBackgroundColor('#000000');
+
+        // SOUND
         this.snd_dead = this.sound.add('snd_dead');
 
-        //Ketika karakter di klik
         this.snd_klik = [];
         this.snd_klik.push(this.sound.add('snd_klik1'));
         this.snd_klik.push(this.sound.add('snd_klik2'));
         this.snd_klik.push(this.sound.add('snd_klik3'));
 
-        // Obstacle
-        this.timerHalangan = 0;
-        this.halangan = [];
+        // =========================
+        // NYAWA
+        // =========================
+        this.lives = 3;
 
+        this.label_lives = this.add.text(
+            X_POSITION.LEFT + 150, 
+            Y_POSITION.TOP + 60, 
+            'Nyawa: ' + this.lives,
+            {
+                fontSize: '28px',
+                color: '#ffffff'
+            }
+        ).setOrigin(0.5).setDepth(10);
+
+        // =========================
+        // BACKGROUND LOOP
+        // =========================
         this.backgrounds = [];
-        let bg_x = 1366 / 2;
+        let bg_x = width / 2;
 
-        // Buat background bergulir
         for (let i = 0; i < 2; i++) {
             let bg_awal = [];
 
-            let BG = this.add.image(bg_x, 768 / 2, 'fg_loop_back');
-            let FG = this.add.image(bg_x, 768 / 2, 'fg_loop');
+            let BG = this.add.image(bg_x, height / 2, 'fg_loop_back').setOrigin(0.5);
+            let FG = this.add.image(bg_x, height / 2, 'fg_loop').setOrigin(0.5);
 
             BG.setData('kecepatan', 2);
             FG.setData('kecepatan', 4);
@@ -71,17 +85,18 @@ export class Play extends Phaser.Scene {
 
             this.backgrounds.push(bg_awal);
 
-            bg_x += 1366;
+            bg_x += width;
         }
 
-        // Tambah karakter
-        this.chara = this.add.image(130, Y_POSITION.CENTER, 'player');
-        this.chara.setDepth(3);
-        this.chara.setScale(0);
+        // =========================
+        // PLAYER
+        // =========================
+        this.chara = this.add.image(200, Y_POSITION.CENTER, 'player')
+        .setDepth(3)
+        .setScale(0);
 
         this.isGameRunning = false;
 
-        // Tween untuk karakter muncul, lalu mulai game
         this.tweens.add({
             delay: 250,
             targets: this.chara,
@@ -94,24 +109,36 @@ export class Play extends Phaser.Scene {
             }
         });
 
-        // Inisialisasi variabel global this.score dengan nilai awal 0
+        // =========================
+        // SCORE
+        // =========================
         this.score = 0;
-                
-        // Membuat panel nilai
-        this.panel_score = this.add.image(X_POSITION.CENTER, Y_POSITION.TOP + 60, 'panel_skor');
-        this.panel_score.setOrigin(0.5);
-        this.panel_score.setDepth(10);
-        this.panel_score.setAlpha(0.8);
 
-        // Membuat label nilai pada panel dengan nilai yang 
-        // diambil dari variabel this.score
-        this.label_score = this.add.text(this.panel_score.x + 25, this.panel_score.y, this.score);
-        this.label_score.setOrigin(0.5);
-        this.label_score.setDepth(10);
-        this.label_score.setFontSize(30);
-        this.label_score.setTint(0xff732e);
+        this.panel_score = this.add.image(
+            X_POSITION.CENTER, 
+            Y_POSITION.TOP + 60, 
+            'panel_skor'
+        ).setOrigin(0.5).setDepth(10).setAlpha(0.8);
 
-        //====================== CUSTOM FUNCTION ======================//
+        this.label_score = this.add.text(
+            this.panel_score.x, 
+            this.panel_score.y, 
+            this.score,
+            {
+                fontSize: '30px',
+                color: '#ff732e'
+            }
+        ).setOrigin(0.5).setDepth(10);
+
+        // =========================
+        // OBSTACLE
+        // =========================
+        this.timerHalangan = 0;
+        this.halangan = [];
+
+        // =========================
+        // GAME OVER
+        // =========================
         this.gameOver = () => { 
             var haight_skor = localStorage['Skor'] || 0 ;
             if (this.score > haight_skor){
@@ -120,8 +147,7 @@ export class Play extends Phaser.Scene {
             this.scene.start('Start');
         };
 
-
-        // Input pointer (contoh: buat karakter turun kalau klik dilepas)
+        // INPUT
         this.input.on('pointerup', () => {
             if (!this.isGameRunning) return;
 
@@ -129,7 +155,6 @@ export class Play extends Phaser.Scene {
 
             this.tweens.add({
                 targets: this.chara,
-                ease: 'Power1',
                 duration: 750,
                 y: this.chara.y + 200
             });
@@ -137,147 +162,103 @@ export class Play extends Phaser.Scene {
     }
 
     update() {
+
+        let width = this.cameras.main.width;
+
         if (this.isGameRunning) {
-            // Karakter naik
             this.chara.y -= 5;
 
-            // Batas bawah
-            if (this.chara.y > 690) {
-                this.chara.y = 690;
+            if (this.chara.y > 1000) {
+                this.chara.y = 1000;
             }
         }
 
-        // Update background
+        // BACKGROUND LOOP
         for (let i = 0; i < this.backgrounds.length; i++) {
             for (let j = 0; j < this.backgrounds[i].length; j++) {
                 this.backgrounds[i][j].x -= this.backgrounds[i][j].getData('kecepatan');
 
-                if (this.backgrounds[i][j].x <= -(1366 / 2)) {
-                    let diff = this.backgrounds[i][j].x + (1366 / 2);
-                    this.backgrounds[i][j].x = 1366 + 1366 / 2 + diff;
+                if (this.backgrounds[i][j].x <= -(width / 2)) {
+                    let diff = this.backgrounds[i][j].x + (width / 2);
+                    this.backgrounds[i][j].x = width + width / 2 + diff;
                 }
             }
         }
 
-        // Jika this.timerHalangan adalah 0, maka buat peluru baru
+        // SPAWN OBSTACLE
         if (this.timerHalangan == 0)
         {
-            // mendapatkan angka acak antara 60 hingga 680
-            var acak_y = Math.floor((Math.random() * 680) + 60);
+            var acak_y = Math.floor((Math.random() * 900) + 100);
 
-            // Membuat peluru baru dengan posisi x 1500 (kanan), dan posisi y acak antara 60-680
-            var halanganBaru = this.add.image(1500, acak_y, 'obstc');
-            // Mengubah titik posisi (anchor point) berada di kiri, bukan di tengah
+            var halanganBaru = this.add.image(width + 100, acak_y, 'obstc');
             halanganBaru.setOrigin(0.0);
             halanganBaru.setData("status_aktif", true);
             halanganBaru.setData("kecepatan", Math.floor((Math.random() * 15) + 10))
             halanganBaru.setDepth(5);
 
-            // Memasukkan peluru ke dalam array agar dapat di akses kembali
             this.halangan.push(halanganBaru);
 
-            // Mengatur ulang waktu untuk memunculkan halangan selanjutnya. Acak antara 10 sampai 50 frame)
             this.timerHalangan = Math.floor((Math.random() * 50) + 10);
         }
 
-        // Mengakses array halangan
+        // GERAK OBSTACLE
         for (let i = this.halangan.length - 1; i >= 0; i--) 
         {
-            // Menggerakkan halangan sebanyak kecepatan per frame
             this.halangan[i].x -= this.halangan[i].getData("kecepatan");
 
-            // Jika halangan sudah di posisi kurang dari -200 (sudah tidak terlihat)
             if (this.halangan[i].x < -200)
             {
-                // Hancurkan halangan untuk mengurangi beba n memori
                 this.halangan[i].destroy();
-                
-                // Hapus dari array halangan yang sudah dihancurkan
                 this.halangan.splice(i, 1);
-                
                 break;
             }
         }
 
-        // Mengurangi timer halangan sebanyak 1 setiap framenya
-        // Jika sudah 0, akan di atur ulang lagi nilainya pada kode di atas
         this.timerHalangan--;
 
-
+        // SCORE
         for (var i = this.halangan.length - 1; i >= 0; i--)
         {
-            // Jika posisi halangan + 50 lebih kecil dari karakter dan status halangan masih aktif
             if (this.chara.x > this.halangan[i].x + 50 && this.halangan[i].getData("status_aktif") == true)
             {
-                // Ubah status halangan menjadi tidak aktif
                 this.halangan[i].setData("status_aktif", false);
-
-                // Tambahkan nilai sebanyak 1 poin
                 this.score++;
-
-                // Ubah label menjadi nilai terbaru
                 this.label_score.setText(this.score);
             }
         }
 
+        // =========================
+        // COLLISION + NYAWA
+        // =========================
         for (let i = this.halangan.length - 1; i >= 0; i--) {
-        	// Jika rect chara mengenai titik posisi halangan
-        	if (this.chara.getBounds().contains(this.halangan[i].x, this.halangan[i].y)) {
-        		// Ubah status halangan menjadi tidak aktif
-        		this.halangan[i].setData("status_aktif", false);
-        
-        		// Ubah status game
-        		this.isGameRunning = false;
-                this.snd_dead.play();
-         
-        		// melakukan cek variabel penampung animasi karakter
-        		// sebelum menghentikan animasi karakter
-        		if (this.charaTweens != null) {
-        		    this.charaTweens.stop();
-        		}
-        	
-        		// Membuat Objek pengganti this, karena this tidak dapat di akses pada onComplete secara langsung
-        		var myScene = this;
-        
-        		// Membuat animasi kalah
-                this.charaTweens = this.tweens.add({
-                    targets: this.chara,
-                    ease: 'Elastic.easeOut',
-                    duration: 1000,
-                    alpha: 0,
+            if (this.chara.getBounds().contains(this.halangan[i].x, this.halangan[i].y)) {
 
-                    onComplete: () => {
-                        this.gameOver();
-                    }
+                this.halangan[i].destroy();
+                this.halangan.splice(i, 1);
+
+                this.lives--;
+                this.label_lives.setText('Nyawa: ' + this.lives);
+
+                this.snd_dead.play();
+
+                this.chara.setTint(0xff0000);
+                this.time.delayedCall(200, () => {
+                    this.chara.clearTint();
                 });
-        						
-        		// menghentikan looping jika sudah terpenuhi pengecekannya
-        		break;
-        	}
+
+                if (this.lives <= 0) {
+                    this.isGameRunning = false;
+                    this.gameOver();
+                }
+
+                break;
+            }
         }
-        
+
+        // OUT OF SCREEN
         if (this.chara.y < -50) {
-        	// Ubah status game
-        	this.isGameRunning = false;
-        
-        	// melakukan cek variabel penampung animasi karakter
-        	// sebelum menghentikan animasi karakter
-        	if (this.charaTweens != null) {
-        		this.charaTweens.stop();
-        	}
-        	
-        	// Membuat Objek pengganti this, karena this tidak dapat di akses pada onComplete secara langsung
-        	// let myScene = this;
-        
-        	// Membuat animasi kalah
-        	this.charaTweens = this.tweens.add({
-        		targets: this.chara,
-        		ease: 'Elastic.easeOut',
-        		duration: 1000,
-        		alpha: 0,
-        		// Memanggil fungsi gameOver() setelah animasi selesai 
-        		onComplete: this.gameOver
-        	});			
+            this.isGameRunning = false;
+            this.gameOver();
         }
     }
 }
